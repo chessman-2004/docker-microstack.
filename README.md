@@ -34,6 +34,18 @@ frontend-net (Bridge): Exposes Nginx (:8080), Prometheus (:9090), and Grafana (:
 
 backend-net (Internal Bridge): Connects API, Celery Worker, PostgreSQL, and Redis with zero outbound/inbound public internet exposure.
 
+| Service | Technology | Role |
+| :--- | :--- | :--- |
+| **Gateway** | Nginx (alpine) | Reverse proxy, TLS termination readiness, client header forwarding |
+| **API Server** | FastAPI / Uvicorn | RESTful API gateway exposing asynchronous processing triggers & PDF streams |
+| **Worker Engine** | Celery | Distributed asynchronous task execution engine for PDF generation |
+| **Message Broker** | Redis 7 (alpine) | In-memory message queue and ephemeral task state broker |
+| **Database** | PostgreSQL 15 (alpine) | Persistent relational database storing job records (StatefulSet) |
+| **Migrations** | Alembic | Version-controlled database schema evolution scripts |
+| **Shared Storage** | Docker Volume / PVC | Shared file storage mount (`/app/generated_pdfs`) for binary PDF assets |
+| **Metrics Collector** | Prometheus | Time-series scraper querying FastAPI `/metrics` telemetry |
+| **Visualization** | Grafana | Live graphical dashboards for throughput, latency, and system health |
+
 ✨ Enterprise & DevSecOps Features
 1. Hardened Security & Multi-Stage Builds
 Multi-Stage Dockerfile: Utilizes a builder stage (python:3.11-alpine) to compile C-extensions before discarding compilers (gcc, musl-dev) in the runtime image, cutting final image size by ~85%.
