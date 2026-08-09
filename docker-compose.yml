@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # 1. Reverse Proxy (Gateway)
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - frontend-net
+    depends_on:
+      - api
+
+  # 2. Application Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+    networks:
+      - frontend-net
+      - backend-net
+    depends_on:
+      cache:
+        condition: service_healthy
+
+  # 3. Cache Storage
+  cache:
+    image: redis:7-alpine
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+# Network Isolation
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+    internal: true # Cannot talk directly to the outside internet
