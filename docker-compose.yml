@@ -46,3 +46,16 @@ networks:
   backend-net:
     driver: bridge
     internal: true # Cannot talk directly to the outside internet
+
+lint:
+    name: Lint Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: List Files (Debug)
+        run: ls -la
+
+      - name: Run Hadolint
+        run: docker run --rm -i hadolint/hadolint < Dockerfile
