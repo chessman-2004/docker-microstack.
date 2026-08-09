@@ -16,9 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: ./Dockerfile
+        run: docker run --rm -i hadolint/hadolint < Dockerfile
 
   # 2. Security Scan: Vulnerability Scanning with Trivy
   security-scan:
