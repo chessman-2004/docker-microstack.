@@ -1,6 +1,6 @@
 # 🚀 Production-Hardened Asynchronous Microservices Platform
 
-[![Docker CI/CD & DevSecOps Pipeline](https://github.com/chessman-2004/docker-microstack/actions/workflows/docker-ci.yml/badge.svg)](https://github.com/chessman-2004/docker-microstack/actions)
+[![Docker CI/CD & DevSecOps Pipeline](https://github.com/chessman-2004/docker-microstack./actions/workflows/docker-ci.yml/badge.svg)](https://github.com/chessman-2004/docker-microstack./actions/workflows/docker-ci.yml)
 ![Docker](https://img.shields.io/badge/Docker-24.0+-2496ED?logo=docker&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15--Alpine-4169E1?logo=postgresql&logoColor=white)
