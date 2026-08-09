@@ -1,19 +1,17 @@
-version: '3.8'
-
 services:
   # 1. Reverse Proxy (Gateway)
   proxy:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx:/etc/nginx/conf.d
     networks:
       - frontend-net
     depends_on:
       - api
 
-  # 2. Application Backend
+  # 2. Application Backend API
   api:
     build:
       context: .
@@ -21,14 +19,39 @@ services:
     environment:
       - REDIS_HOST=cache
       - REDIS_PORT=6379
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/microservices_db
     networks:
       - frontend-net
       - backend-net
     depends_on:
       cache:
         condition: service_healthy
+      db:
+        condition: service_healthy
 
-  # 3. Cache Storage
+  # 3. Asynchronous Task Worker (Celery)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A tasks.celery_app worker --loglevel=info
+    environment:
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/microservices_db
+    networks:
+      - backend-net
+    depends_on:
+      cache:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  # 4. Cache Storage & Message Broker
   cache:
     image: redis:7-alpine
     networks:
@@ -39,23 +62,53 @@ services:
       timeout: 3s
       retries: 5
 
-# Network Isolation
+  # 5. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=microservices_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d microservices_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # 6. Metrics Scraper (Prometheus)
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+    networks:
+      - frontend-net
+      - backend-net
+
+  # 7. Visualization Dashboard (Grafana)
+  grafana:
+    image: grafana/grafana:10.3.3
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - frontend-net
+      - backend-net
+    depends_on:
+      - prometheus
+
+# Persistent Data Volumes & Networks
+volumes:
+  postgres_data:
+
 networks:
   frontend-net:
     driver: bridge
   backend-net:
     driver: bridge
-    internal: true # Cannot talk directly to the outside internet
-
-lint:
-    name: Lint Dockerfile
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: List Files (Debug)
-        run: ls -la
-
-      - name: Run Hadolint
-        run: docker run --rm -i hadolint/hadolint < Dockerfile
