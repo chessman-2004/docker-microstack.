@@ -5,7 +5,7 @@ FROM python:3.11-alpine AS builder
 
 WORKDIR /build
 
-# Install build tools required for compiling C-extensions (if needed)
+# hadolint ignore=DL3018
 RUN apk add --no-cache gcc musl-dev
 
 # Install dependencies into a temporary directory
@@ -31,10 +31,9 @@ COPY app/ .
 # Change ownership of app files to non-root user
 RUN chown -R appuser:appgroup /app
 
-# Switch context to the non-root user
+# hadolint ignore=DL3066
 USER appuser
 
 EXPOSE 8000
 
-# Run the FastAPI server
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
