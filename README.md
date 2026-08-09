@@ -1,6 +1,6 @@
 # 🛡️ Production-Hardened Containerized Micro-Stack
 
-![Docker CI/CD Pipeline](https://github.com/YOUR-REAL-USERNAME/docker-microstack/actions/workflows/docker-ci.yml/badge.svg?branch=main)
+![Docker CI/CD Pipeline](https://github.com/chessman-2004/docker-microstack/actions/workflows/docker-ci.yml/badge.svg?branch=main)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)
