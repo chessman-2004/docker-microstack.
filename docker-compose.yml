@@ -30,6 +30,9 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+    volumes:
+      - pdf_storage:/app/generated_pdfs
+      
 
   # 3. Asynchronous Task Worker (Celery)
   worker:
@@ -50,6 +53,8 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+    volumes:
+      - pdf_storage:/app/generated_pdfs
 
   # 4. Cache Storage & Message Broker
   cache:
@@ -106,6 +111,7 @@ services:
 # Persistent Data Volumes & Networks
 volumes:
   postgres_data:
+  pdf_storage:
 
 networks:
   frontend-net:

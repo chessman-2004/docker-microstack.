@@ -33,7 +33,8 @@ COPY --from=builder /install /usr/local
 COPY app/ .
 
 # Make entrypoint script executable and set ownership
-RUN chmod +x /app/entrypoint.sh && \
+RUN mkdir -p /app/generated_pdfs && \
+    chmod +x /app/entrypoint.sh && \
     chown -R appuser:appgroup /app
 
 # hadolint ignore=DL3066

@@ -4,11 +4,12 @@ from celery import Celery
 REDIS_HOST = os.getenv("REDIS_HOST", "cache")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
 
-# Celery uses Redis as the message broker
+# Celery configuration with task module import
 celery_app = Celery(
     "worker",
     broker=f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
-    backend=f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+    backend=f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
+    include=["tasks"]  # <--- Registers tasks.py with Celery on boot
 )
 
 celery_app.conf.update(
