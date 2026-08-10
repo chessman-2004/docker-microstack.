@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration-job
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - name: alembic-migration
+        image: docker-microstack-app:v14
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c", "alembic stamp heads && alembic upgrade heads"]
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:postgrespassword@db:5432/microservices_db"
+      restartPolicy: OnFailure

@@ -1,12 +1,14 @@
-from sqlalchemy import Column, Integer, String, DateTime
-from datetime import datetime
+import uuid
+from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy.sql import func
 from database import Base
 
 class Job(Base):
     __tablename__ = "jobs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    task_type = Column(String, nullable=False)
-    status = Column(String, default="PENDING") # PENDING, PROCESSING, COMPLETED
-    result = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # UUIDv4 primary key string (36 chars) to eliminate IDOR vulnerabilities
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    task_type = Column(String(100), nullable=False)
+    status = Column(String(50), default="PENDING")
+    result = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

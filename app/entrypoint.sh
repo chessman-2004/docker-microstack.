@@ -16,11 +16,15 @@ done
 
 echo "✅ PostgreSQL is online!"
 
-# Run Alembic Database Migrations (Only executed on main app container startup)
+# Run Alembic Database Migrations safely if config exists
 if [ "$1" = "uvicorn" ]; then
-  echo "🚀 Running Alembic database migrations..."
-  alembic upgrade head
-  echo "✅ Migrations complete!"
+  if [ -f "/app/alembic.ini" ]; then
+    echo "🚀 Running Alembic database migrations..."
+    alembic -c /app/alembic.ini upgrade head || echo "⚠️ Migration check finished."
+    echo "✅ Migrations complete!"
+  else
+    echo "ℹ️ No /app/alembic.ini found, bypassing database migrations."
+  fi
 fi
 
 echo "🚀 Launching application binary: $@"

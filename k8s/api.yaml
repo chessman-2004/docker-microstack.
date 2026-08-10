@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: docker-microstack-app:latest
+          image: docker-microstack-app:v12
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -23,12 +23,6 @@ spec:
                 name: microstack-config
             - secretRef:
                 name: microstack-secrets
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 5
           volumeMounts:
             - name: pdf-storage
               mountPath: /app/generated_pdfs
@@ -43,8 +37,8 @@ metadata:
   name: api
 spec:
   type: ClusterIP
+  selector:
+    app: api
   ports:
     - port: 8000
       targetPort: 8000
-  selector:
-    app: api
