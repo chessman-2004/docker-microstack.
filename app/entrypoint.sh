@@ -1,21 +1,27 @@
 #!/bin/sh
-
-# Exit immediately if a command exits with a non-zero status
 set -e
 
-echo "⏳ Waiting for PostgreSQL to be ready..."
-
-# Loop until PostgreSQL port 5432 accepts TCP connections
-while ! nc -z $POSTGRES_HOST $POSTGRES_PORT; do
-  sleep 0.5
+echo "⏳ Waiting for PostgreSQL database initialization..."
+until python -c "
+import socket, os, urllib.parse
+url = urllib.parse.urlparse(os.getenv('DATABASE_URL', 'postgresql://user:password@db:5432/microstack_db'))
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(2)
+s.connect((url.hostname, url.port or 5432))
+s.close()
+" 2>/dev/null; do
+  echo "Postgres is unavailable - sleeping 1s"
+  sleep 1
 done
 
-echo "✅ PostgreSQL is up! Initializing database schema..."
+echo "✅ PostgreSQL is online!"
 
-# Auto-create database tables defined in models.py
-python -c "from database import engine; import models; models.Base.metadata.create_all(bind=engine)"
+# Run Alembic Database Migrations (Only executed on main app container startup)
+if [ "$1" = "uvicorn" ]; then
+  echo "🚀 Running Alembic database migrations..."
+  alembic upgrade head
+  echo "✅ Migrations complete!"
+fi
 
-echo "🚀 Starting application server..."
-
-# Execute the main container CMD (Uvicorn)
+echo "🚀 Launching application binary: $@"
 exec "$@"
