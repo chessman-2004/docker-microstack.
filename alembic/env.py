@@ -1,25 +1,38 @@
 import os
+import sys
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Import your SQLAlchemy models metadata
-from app.database import Base
-import app.models  # Ensures models are registered
+# 1. Add current, parent, and app directories to Python Path
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+
+for p in [PARENT_DIR, os.path.join(PARENT_DIR, "app"), CURRENT_DIR]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+# 2. Try direct import first, then module fallback
+try:
+    from database import Base
+    import models
+except ModuleNotFoundError:
+    from app.database import Base
+    from app import models
 
 config = context.config
 
-# Dynamic database URL override from Environment
-db_url = os.getenv(
-    "DATABASE_URL",
-    "postgresql://user:password@db:5432/microstack_db"
-)
+if config.config_file_name:
+    try:
+        fileConfig(config.config_file_name)
+    except Exception:
+        pass
+
+db_url = os.getenv("DATABASE_URL", "postgresql://microstack:microstack123@db:5432/microstack_db")
 config.set_main_option("sqlalchemy.url", db_url)
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
 target_metadata = Base.metadata
+
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -32,6 +45,7 @@ def run_migrations_offline() -> None:
 
     with context.begin_transaction():
         context.run_migrations()
+
 
 def run_migrations_online() -> None:
     connectable = engine_from_config(
@@ -47,6 +61,7 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
