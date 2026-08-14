@@ -95,7 +95,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-
+from prometheus_fastapi_instrumentator import Instrumentator
 from config import settings
 from database import SessionLocal
 from models import Job
@@ -108,6 +108,13 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+Instrumentator().instrument(app).expose(app)
 
 # --- Database Dependency (Defined FIRST) ---
 def get_db():

@@ -17,12 +17,13 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      - PYTHONPATH=.
       - REDIS_HOST=cache
       - REDIS_PORT=6379
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
-      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/microservices_db
-      - API_KEY=microstack-dev-secret-key-change-in-prod
+      - DATABASE_URL=${DATABASE_URL}
+      - API_KEY=${API_KEY}
     networks:
       - frontend-net
       - backend-net
@@ -33,6 +34,8 @@ services:
         condition: service_healthy
     volumes:
       - pdf_storage:/app/generated_pdfs
+      - ./tests:/app/tests
+      
       
 
   # 3. Asynchronous Task Worker (Celery)
@@ -42,11 +45,12 @@ services:
       dockerfile: Dockerfile
     command: celery -A tasks.celery_app worker --loglevel=info
     environment:
+      - PYTHONPATH=.
       - REDIS_HOST=cache
       - REDIS_PORT=6379
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
-      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/microservices_db
+      - DATABASE_URL=${DATABASE_URL}
     networks:
       - backend-net
     depends_on:
@@ -72,15 +76,16 @@ services:
   db:
     image: postgres:15-alpine
     environment:
+      - PYTHONPATH=.
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgrespassword
-      - POSTGRES_DB=microservices_db
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d microservices_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -102,6 +107,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - PYTHONPATH=.
       - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
       - frontend-net

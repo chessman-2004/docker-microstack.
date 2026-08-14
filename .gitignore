@@ -1,3 +1,20 @@
-__pycache__/
-*.pyc
+# Environments
 .env
+.venv
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Docker & Kubernetes local overrides
+*-local.yaml
+*.log
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
