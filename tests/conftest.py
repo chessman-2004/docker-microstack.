@@ -2,7 +2,8 @@ import os
 import pytest
 
 # 1. FORCE SQLite environment variable BEFORE any app modules are imported
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ.setdefault("API_KEY", "test-secret-key-12345")
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
