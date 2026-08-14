@@ -19,6 +19,8 @@ FROM python:3.11-alpine
 
 WORKDIR /app
 
+ENV PYTHONPATH=/app
+
 # Install runtime PostgreSQL client library & netcat for entrypoint health checks
 # hadolint ignore=DL3018
 RUN apk add --no-cache libpq netcat-openbsd

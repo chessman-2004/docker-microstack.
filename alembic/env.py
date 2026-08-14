@@ -13,6 +13,7 @@ for p in [PARENT_DIR, os.path.join(PARENT_DIR, "app"), CURRENT_DIR]:
         sys.path.insert(0, p)
 
 # 2. Try direct import first, then module fallback
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 try:
     from database import Base
     import models

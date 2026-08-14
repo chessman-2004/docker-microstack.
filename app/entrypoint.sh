@@ -20,7 +20,7 @@ echo "✅ PostgreSQL is online!"
 if [ "$1" = "uvicorn" ]; then
   if [ -f "/app/alembic.ini" ]; then
     echo "🚀 Running Alembic database migrations..."
-    alembic -c /app/alembic.ini upgrade head || echo "⚠️ Migration check finished."
+    alembic -c /app/alembic.ini upgrade heads || echo "⚠️ Migration check finished."
     echo "✅ Migrations complete!"
   else
     echo "ℹ️ No /app/alembic.ini found, bypassing database migrations."

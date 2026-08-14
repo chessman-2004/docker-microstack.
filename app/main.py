@@ -108,11 +108,6 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    docs_url="/docs",
-    redoc_url="/redoc"
-)
 
 Instrumentator().instrument(app).expose(app)
 
