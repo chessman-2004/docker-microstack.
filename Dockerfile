@@ -20,10 +20,11 @@ FROM python:3.11-alpine
 WORKDIR /app
 
 # Install runtime PostgreSQL client library & netcat for entrypoint health checks
+# hadolint ignore=DL3018
 RUN apk add --no-cache libpq netcat-openbsd
 
-# Create a non-root group and user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Create a non-root group and user with explicit numeric IDs (UID/GID 10001)
+RUN addgroup -g 10001 -S appgroup && adduser -u 10001 -S appuser -G appgroup
 
 # Copy built Python packages from builder stage
 COPY --from=builder /install /usr/local
@@ -38,7 +39,8 @@ RUN mkdir -p /app/generated_pdfs && \
     chmod +x /app/entrypoint.sh && \
     chown -R appuser:appgroup /app
 
-USER appuser
+# Use numeric UID for security & Hadolint compliance
+USER 10001
 
 EXPOSE 8000
 
