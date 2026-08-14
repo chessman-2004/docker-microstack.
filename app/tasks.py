@@ -41,7 +41,8 @@ def _mark_job_failed(job_id: str, error_reason: str):
     soft_time_limit=30,
     time_limit=45
 )
-def generate_pdf_task(self, job_id: str, payload: dict = None):
+def generate_pdf_task(self, job_id: str, payload: dict = None,request_id: str = None):
+    logger.info(f"Processing PDF generation for job {job_id}", extra={"request_id": request_id, "job_id": job_id})
     os.makedirs(PDF_STORAGE_DIR, exist_ok=True)
     pdf_filename = f"enterprise_report_{job_id}.pdf"
     pdf_path = os.path.join(PDF_STORAGE_DIR, pdf_filename)
