@@ -4,14 +4,14 @@
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.28+-326CE5?logo=kubernetes&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-24.0+-2496ED?logo=docker&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.13-3776AB?logo=python&logoColor=white)
+![Pytest Coverage](https://img.shields.io/badge/Coverage-87%25-brightgreen?logo=pytest&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15--Alpine-4169E1?logo=postgresql&logoColor=white)
 ![Alembic](https://img.shields.io/badge/Alembic-Migrations-6A1B9A?logo=python&logoColor=white)
 ![Celery](https://img.shields.io/badge/Celery-5.3.6-37814A?logo=celery&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7--Alpine-DC382D?logo=redis&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-v2.50.0-E6522C?logo=prometheus&logoColor=white)
-![Grafana](https://img.shields.io/badge/Grafana-10.3.3-F46800?logo=grafana&logoColor=white)
 
-An enterprise-ready, containerized microservice stack featuring an asynchronous PDF generation engine, versioned database schema migrations, complete Kubernetes orchestration, persistent shared volume storage, zero-downtime dependency management, and live telemetry observability.
+An enterprise-ready, containerized microservice stack featuring an asynchronous PDF generation engine, API key authentication, distributed request tracing, versioned database schema migrations, complete Kubernetes orchestration, persistent shared volume storage, live telemetry observability, and an isolated unit testing suite achieving **87% code coverage**.
 
 ---
 
@@ -34,40 +34,40 @@ frontend-net (Bridge): Exposes Nginx (:8080), Prometheus (:9090), and Grafana (:
 
 backend-net (Internal Bridge): Connects API, Celery Worker, PostgreSQL, and Redis with zero outbound/inbound public internet exposure.
 
-| Service | Technology | Role |
-| :--- | :--- | :--- |
-| **Gateway** | Nginx (alpine) | Reverse proxy, TLS termination readiness, client header forwarding |
-| **API Server** | FastAPI / Uvicorn | RESTful API gateway exposing asynchronous processing triggers & PDF streams |
-| **Worker Engine** | Celery | Distributed asynchronous task execution engine for PDF generation |
-| **Message Broker** | Redis 7 (alpine) | In-memory message queue and ephemeral task state broker |
-| **Database** | PostgreSQL 15 (alpine) | Persistent relational database storing job records (StatefulSet) |
-| **Migrations** | Alembic | Version-controlled database schema evolution scripts |
-| **Shared Storage** | Docker Volume / PVC | Shared file storage mount (`/app/generated_pdfs`) for binary PDF assets |
-| **Metrics Collector** | Prometheus | Time-series scraper querying FastAPI `/metrics` telemetry |
-| **Visualization** | Grafana | Live graphical dashboards for throughput, latency, and system health |
-
 ✨ Enterprise & DevSecOps Features
-1. Hardened Security & Multi-Stage Builds
+1. Hardened Security, Auth & Multi-Stage Builds
+API Key Header Security: Protected endpoints require a valid X-API-Key header, returning 401 Unauthorized for unauthenticated requests.
+
 Multi-Stage Dockerfile: Utilizes a builder stage (python:3.11-alpine) to compile C-extensions before discarding compilers (gcc, musl-dev) in the runtime image, cutting final image size by ~85%.
 
 Least Privilege Context: Drops root privileges inside containers to run strictly as an unprivileged user (USER appuser).
 
 Automated Security Scanning: Integrated Hadolint for Dockerfile static linting and Trivy for CVE vulnerability scanning inside CI/CD pipelines.
 
-2. Production Database Migrations & Schema Control
+2. Observability, Logging & Tracing
+Correlation ID Middleware: Injects or propagates a unique X-Request-ID across HTTP requests and dispatches it through Celery tasks for end-to-end request tracing.
+
+Structured JSON Logging: Implements python-json-logger for standardized JSON logs formatted for ELK/Loki log aggregation.
+
+3. Production Database Migrations & Schema Control
 Alembic Versioning: Replaced static table initialization (create_all()) with Alembic version-controlled migration scripts, allowing safe schema upgrades and rollbacks in production environments.
 
 Dependency Orchestration: Uses container healthchecks (pg_isready, redis-cli ping) and startup scripts to guarantee database readiness prior to execution.
 
-3. Asynchronous PDF Generation Engine
+4. Asynchronous PDF Generation Engine
 ReportLab Processing Pipeline: High-latency document processing is dispatched to Celery background workers via Redis. Workers render PDF reports using ReportLab and write directly to a shared volume (/app/generated_pdfs).
 
 Binary File Streaming: FastAPI streams generated PDF binaries directly to client browsers via dedicated /jobs/{job_id}/download endpoints.
 
-4. Cloud-Native Kubernetes Orchestration
+5. Cloud-Native Kubernetes Orchestration
 Complete Manifest Suite (/k8s): Includes Kubernetes manifests for Deployments (API, Worker, Cache), StatefulSets (PostgreSQL), PersistentVolumeClaims (Shared PDF storage), Services, ConfigMaps, and Secrets.
 
-Resiliency & Self-Healing: Configured with readiness/liveness HTTP probes to support zero-downtime rolling deployment updates.
+Resiliency & Probes: Configured with Liveness (/healthz) and Readiness (/readyz) HTTP health probes for zero-downtime rolling deployment updates.
+
+6. Automated Testing & In-Memory Isolation (87% Coverage)
+Isolated Pytest Suite: Uses an in-memory SQLite database (sqlite:///:memory:) and fixture dependency overrides to run unit/integration tests without requiring live PostgreSQL/Redis containers.
+
+Sub-Second Execution: Runs the full test suite in <0.2 seconds while validating route handlers, database persistence, authentication, and PDF generation logic.
 
 🚦 Quickstart Guide
 Prerequisites
@@ -80,7 +80,7 @@ git, curl, and kubectl (optional).
 git clone [https://github.com/chessman-2004/docker-microstack.git](https://github.com/chessman-2004/docker-microstack.git)
 cd docker-microstack
 
-2. Option A: Launch via Docker Compose
+2. Launch via Docker Compose
 
 # Build and launch all 7 containers
 docker compose up -d --build
@@ -88,10 +88,10 @@ docker compose up -d --build
 # Apply database migrations
 docker compose exec api alembic upgrade head
 
-3. Option B: Deploy to Kubernetes Cluster
+3. Deploy to Kubernetes Cluster
 
 # 1. Build local container image
-docker build -t docker-microstack-app:latest .
+docker build -t docker-microstack-app:v16 .
 
 # 2. Deploy all manifests to Kubernetes
 kubectl apply -f k8s/
@@ -103,43 +103,62 @@ kubectl get pods
 kubectl port-forward service/api 8000:8000
 
 🧪 Testing & Verification
-1. Submit an Asynchronous PDF Task
-Trigger a background PDF compilation job through the API gateway:
+1. Run Automated Pytest Suite Locally
+Run the isolated unit test suite with code coverage breakdown:
 
-curl -X POST "http://localhost:8080/jobs/?task_type=phase2_alembic_pdf"
+pytest --cov=app --cov-report=term-missing
 
-Response:
+Coverage Breakdown:
+
+Name                Stmts   Miss  Cover   Missing
+-------------------------------------------------
+app/auth.py             8      0   100%
+app/celery_app.py       6      6     0%   1-15
+app/config.py          12      0   100%
+app/database.py        12      4    67%   16-20
+app/logger.py          17      3    82%   7-8, 21
+app/main.py            77      8    90%   114-118, 147-149, 213
+app/models.py          11      0   100%
+app/tasks.py          117     14    88%   29-31, 232-244
+-------------------------------------------------
+TOTAL                 260     35    87%
+
+
+2. Manual API Endpoint Verification
+A. Health Probes
+
+# Liveness Probe
+curl http://localhost:8080/healthz
+
+# Readiness Probe (verifies database connectivity)
+curl http://localhost:8080/readyz
+
+B. Submit an Authenticated Asynchronous Task
+
+curl -i -X POST http://localhost:8080/jobs/ \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: microstack-dev-secret-key-change-in-prod" \
+  -d '{"task_type": "enterprise_platypus_invoice"}'
+
+Response (HTTP/1.1 201 Created):
 
 {
-  "message": "PDF generation task dispatched to Celery worker",
-  "job_id": 1,
-  "status": "PENDING"
+  "id": "1907a7c0-c2e8-4fbf-9da7-040343c5c74e",
+  "status": "PENDING",
+  "result": null,
+  "task_type": "enterprise_platypus_invoice",
+  "created_at": "2026-08-14T16:20:17.486300+00:00"
 }
 
-2. Check Job Processing Status
-Query PostgreSQL records via the REST API:
+C. Query Job Status
 
 curl "http://localhost:8080/jobs/"
 
-When completed, the response will show the download link:
+D. Download Generated PDF Report
 
-{
-  "total_jobs_queued": "1",
-  "jobs": [
-    {
-      "id": 1,
-      "task_type": "phase2_alembic_pdf",
-      "status": "COMPLETED",
-      "result": "/jobs/1/download",
-      "created_at": "2026-08-09T18:00:00"
-    }
-  ]
-}
-
-3. Stream & Download Generated PDF
-Open http://localhost:8080/jobs/1/download directly in your browser or run:
-
-curl -O http://localhost:8080/jobs/1/download
+curl -i http://localhost:8080/jobs/{job_id}/download \
+  -H "X-API-Key: microstack-dev-secret-key-change-in-prod" \
+  --output invoice.pdf
 
 📊 Observability Dashboards
 1. Prometheus Metrics (http://localhost:9090)
@@ -155,7 +174,22 @@ Navigate to Connections > Data Sources > Add Data Source and choose Prometheus.
 Set URL to http://prometheus:9090 and click Save & Test.
 
 🔒 CI/CD & DevSecOps Pipeline
-The included GitHub Actions workflow (.github/workflows/docker-ci.yml) triggers on every push to main and executes:
+The GitHub Actions workflow (.github/workflows/docker-ci.yml) enforces quality gate checks on every push to main across 4 concurrent and sequential jobs:
+
+┌──────────┐
+       │   test   │──────┐
+       └──────────┘      │
+                         ▼
+                   ┌──────────────┐      ┌────────────────┐
+                   │security-scan │ ───► │ build-and-push │
+                   └──────────────┘      └────────────────┘
+                         ▲
+       ┌──────────┐      │
+       │   lint   │──────┘
+       └──────────┘
+
+
+Pytest Unit Tests & Coverage: Runs the full Pytest suite in an isolated Python 3.13 container and uploads coverage.xml.
 
 Hadolint Audit: Lints Dockerfile best practices and formatting.
 
@@ -168,15 +202,18 @@ Multi-Arch Compilation: Builds images concurrently for linux/amd64 and linux/arm
 .
 ├── .github/
 │   └── workflows/
-│       └── docker-ci.yml      # DevSecOps CI/CD workflow
+│       └── docker-ci.yml      # 4-stage DevSecOps CI/CD workflow
 ├── alembic/                    # Database migration scripts & history
 │   ├── versions/              # Revision scripts
 │   └── env.py                 # Alembic environment configuration
 ├── app/
+│   ├── auth.py                # X-API-Key authentication dependency
 │   ├── celery_app.py          # Celery worker configuration
+│   ├── config.py              # Pydantic v2 application settings
 │   ├── database.py            # SQLAlchemy database engine setup
 │   ├── entrypoint.sh          # Dependency wait script
-│   ├── main.py                # FastAPI endpoints & PDF download router
+│   ├── logger.py              # Structured JSON logging configuration
+│   ├── main.py                # FastAPI endpoints, probes & middleware
 │   ├── models.py              # PostgreSQL database schemas
 │   ├── requirements.txt       # Pinned application dependencies
 │   └── tasks.py               # Celery async PDF task worker definitions
@@ -191,7 +228,12 @@ Multi-Arch Compilation: Builds images concurrently for linux/amd64 and linux/arm
 │   └── default.conf           # Gateway reverse proxy configuration
 ├── prometheus/
 │   └── prometheus.yml         # Prometheus scraping target rules
+├── tests/                      # Automated Test Suite
+│   ├── conftest.py            # In-memory SQLite fixtures & session mocks
+│   ├── test_api.py            # FastAPI route & auth integration tests
+│   └── test_tasks.py          # Celery worker PDF task unit tests
 ├── alembic.ini                # Alembic database migration settings
 ├── Dockerfile                 # Multi-stage hardened build file
 ├── docker-compose.yml         # 7-container orchestration topology
+├── pytest.ini                 # Pytest paths and runtime settings
 └── README.md                  # System documentation
